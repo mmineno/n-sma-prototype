@@ -1,6 +1,7 @@
 .DS_Store
 work.txt
 work.MD
+_env*
 *.gem
 *.rbc
 /.config
