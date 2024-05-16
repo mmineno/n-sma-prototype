@@ -1,3 +1,6 @@
+.DS_Store
+work.txt
+work.MD
 *.gem
 *.rbc
 /.config
