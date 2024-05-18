@@ -5,6 +5,7 @@ _env*
 .env
 *.gem
 *.rbc
+c.txt
 /.config
 /coverage/
 /InstalledFiles
