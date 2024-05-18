@@ -2,6 +2,7 @@
 work.txt
 work.MD
 _env*
+.env
 *.gem
 *.rbc
 /.config
