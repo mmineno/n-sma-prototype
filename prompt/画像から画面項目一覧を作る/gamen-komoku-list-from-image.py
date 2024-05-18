@@ -2,6 +2,7 @@ import os
 import base64
 import requests
 import dotenv
+import pandas as pd
 
 # OpenAI APIキーを設定
 dotenv.load_dotenv()
@@ -9,7 +10,6 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 # 画像が保存されているディレクトリ
 image_folder = "/Users/mmineno/Downloads/ib_images"
-output_folder = "output"
 
 # 画像ファイルの拡張子
 image_extensions = [".png", ".jpg", ".jpeg"]
@@ -21,7 +21,7 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
-# 画像ファイルを読み込み、コメントを出力し、Markdownファイルに保存する関数
+# 画像ファイルを読み込み、コメントを出力し、Excelファイルに保存する関数
 def process_images():
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
@@ -31,10 +31,16 @@ def process_images():
         if index > 0:
             break
 
+        # Excelファイルに保存
+        excel_filename = f"{os.path.splitext(filename)[0]}.xlsx"
+        excel_filepath = os.path.join(image_folder, excel_filename)
+
+        # 既にxlsxファイルが存在する場合はスキップ
+        if os.path.exists(excel_filepath):
+            continue
+
         image_path = os.path.join(image_folder, filename)
         base64_image = encode_image(image_path)
-
-        # print(f"Processed {index}: {filename}, saved comments to {base64_image}")
 
         prompt = """
 画像は訪問看護用電子カルテの画面である
@@ -71,6 +77,8 @@ def process_images():
 リストは、リストを必ず先頭に出力すること
 
 必ず項目名は抽象化した名称にすること、具体的な名称に決してならないこと 例: 個人名や具体的な住所など
+
+全て日本語で出力せよ
 markdownのtableのみ出力せよ
 """
         payload = {
@@ -81,7 +89,7 @@ markdownのtableのみ出力せよ
                     "content": [
                         {
                             "type": "text",
-                            "text": "List the UI elements in this web application screenshot, as markdown table.",
+                            "text": prompt,
                         },
                         {
                             "type": "image_url",
@@ -92,7 +100,7 @@ markdownのtableのみ出力せよ
                     ],
                 }
             ],
-            "max_tokens": 300,
+            "max_tokens": 4096,
         }
 
         response = requests.post(
@@ -104,14 +112,17 @@ markdownのtableのみ出力せよ
         # コメントを取得
         comments = response_json["choices"][0]["message"]["content"]
 
-        # Markdownファイルに保存
-        markdown_filename = f"{os.path.splitext(filename)[0]}.md"
-        markdown_filepath = os.path.join(image_folder, markdown_filename)
+        # コメントを行ごとに分割し、リスト形式に変換
+        rows = [
+            line.strip().split("|")[1:-1] for line in comments.strip().split("\n")[2:]
+        ]
 
-        with open(markdown_filepath, "w") as markdown_file:
-            markdown_file.write(comments)
+        # DataFrameに変換
+        df = pd.DataFrame(rows, columns=["項目名", "種類", "説明"])
 
-        print(f"Processed {index}: {filename}, saved comments to {markdown_filename}")
+        df.to_excel(excel_filepath, index=False)
+
+        print(f"Processed {index}: {filename}, saved comments to {excel_filename}")
 
 
 # スクリプトを実行
