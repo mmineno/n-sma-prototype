@@ -28,8 +28,8 @@ def process_images():
     for index, filename in enumerate(os.listdir(image_folder)):
         if not any(filename.lower().endswith(ext) for ext in image_extensions):
             continue
-        if index > 0:
-            break
+        # if index > 0:
+        #     break
 
         # Excelファイルに保存
         excel_filename = f"{os.path.splitext(filename)[0]}.xlsx"
